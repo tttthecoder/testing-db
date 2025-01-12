@@ -17,5 +17,5 @@ services:
       resources:
         limits:
           memory: 1G # Limit memory to 1GB
-          cpus: "0.20" # Limit CPU to 1 core
+          cpus: "2.0" # Limit CPU to 1 core
     restart: always
