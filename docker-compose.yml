@@ -1,0 +1,21 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_USER: tin
+      POSTGRES_PASSWORD: tin
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Mount your SQL file to the init directory
+      - ./pg_hba.conf:/etc/postgresql/postgresql.conf.d/pg_hba.conf
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Limit memory to 1GB
+          cpus: "0.20" # Limit CPU to 1 core
+    restart: always

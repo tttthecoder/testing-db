@@ -1,0 +1,16 @@
+{
+  "name": "testing-db",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "dev": "node test.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@faker-js/faker": "^9.3.0",
+    "massive": "^6.11.3"
+  }
+}
