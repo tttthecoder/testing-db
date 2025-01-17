@@ -16,6 +16,6 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G # Limit memory to 1GB
-          cpus: "0.20" # Limit CPU to 1 core
+          memory: 18G # Limit memory to 1GB
+          cpus: "8.0" # Limit CPU to 1 core
     restart: always
