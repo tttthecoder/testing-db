@@ -1,29 +1,6 @@
 const massive = require("massive");
 const { faker } = require("@faker-js/faker");
 
-// Number of employees to insert (can be dynamically provided)
-const numberOfEmployeesPerBatch = 5000;
-const numberOfBatches = 60;
-const getEmployees = (n) => {
-  const results = [];
-  for (let i = 0; i < n; i++) {
-    const firstName = faker.person.firstName();
-    const email = faker.internet.email();
-    const salary = faker.finance.amount(30000, 90000, 2); // Random salary between 30,000 and 90,000
-    const department = faker.commerce.department();
-
-    // Create the insert promise for each employee
-    results.push({
-      first_name: firstName,
-      email: email,
-      salary: salary,
-      department: department,
-    });
-  }
-  return results;
-};
-
-// Connect to the PostgreSQL database
 massive({
   host: "localhost",
   port: 5432,
@@ -32,32 +9,71 @@ massive({
   application_name: "nodejs",
   poolSize: 90,
   password: "tin",
-})
-  .then((db) => {
-    console.log("Connected to database");
-    // Generate and insert employees dynamically
-    const batchInsertPromises = [];
-    const beforeInsert = performance.now();
-    for (let i = 0; i < numberOfBatches; i++) {
-      const payload = getEmployees(numberOfEmployeesPerBatch);
-      const batchInsertPromise = db.withTransaction(async (tx) => {
-        return await tx.employees.insert(payload);
-      });
-      batchInsertPromises.push(batchInsertPromise);
-    }
+}).then(async (db) => {
+  console.log("Connected to database");
+  try {
+    await db.withTransaction(async (tx) => {
+      const batchInsertPromises = [];
+      for (let i = 1; i < 3; i++) {
+        batchInsertPromises.push(funcA(tx, i));
+      }
+      const result = await Promise.all(batchInsertPromises);
+    });
+  } catch (error) {
+    console.log("5 error outer", error);
+  }
+});
 
-    // Wait for all insertions to complete
-    Promise.all(batchInsertPromises)
-      .then((results) => {
-        console.log(`${
-          results.flatMap((a) => a).length
-        } employees inserted successfully. Took
-          ${(performance.now() - beforeInsert) / 1000} s`);
-      })
-      .catch((err) => {
-        console.error("Error inserting employees:", err);
-      });
-  })
-  .catch((err) => {
-    console.error("Failed to connect to database", err);
-  });
+async function funcA(tx, index) {
+  const result = await tx.query(
+    `
+    update employees set salary = ` +
+      333333 +
+      ` where id= ` +
+      index +
+      ";"
+  );
+  await new Promise((a, b) => setTimeout(a, 4000 - index * 10));
+  if (index === 1) {
+    console.log("2-throw");
+    throw new Error("random error");
+  } else {
+    console.log("1-query");
+    const beforeWait = performance.now();
+    tx.query(
+      `
+        select pg_sleep(10);
+        `
+    );
+    const result = await tx.query(
+      `
+        select pg_sleep(3);
+        update employees set salary = ` +
+        333333 +
+        ` where id= ` +
+        index +
+        ";"
+    );
+    console.log(
+      "3-wait 13 seconds for the already issued queries to finished before closing connection",
+      result,
+      (performance.now() - beforeWait) / 1000
+    );
+    try {
+      console.log("4-query after connection is closed");
+      const result3 = await tx.query(
+        `
+          select pg_sleep(300);
+          select * from employees limit 2;
+         `
+      );
+    } catch (error) {
+      console.log(
+        "6-error because of the query after connection is closed",
+        error
+      );
+    }
+    console.log("7-return");
+  }
+  return result;
+}
